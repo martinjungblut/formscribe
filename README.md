@@ -1,4 +1,6 @@
 # FormScribe
+[![Build Status](https://travis-ci.org/martinjungblut/formscribe.svg?branch=master)](https://travis-ci.org/martinjungblut/formscribe)
+
 FormScribe is a Python 3 library intended to make form validation and processing both easy and correct. It's framework agnostic and test covered. It supports dynamic dependencies and post-validation actions through a declarative API, while using a minimal amount of magic.
 
 ### How can I install it?
