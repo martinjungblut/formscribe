@@ -1,4 +1,3 @@
-from contextlib import suppress
 from formscribe import (Form, Field, ValidationError, SubmitError)
 import hashlib
 import unittest
@@ -31,8 +30,10 @@ class LoginForm(Form):
 
         @staticmethod
         def validate(value):
-            with suppress(AttributeError):
+            try:
                 value = value.strip()
+            except AttributeError:
+                pass
 
             try:
                 value = int(value)

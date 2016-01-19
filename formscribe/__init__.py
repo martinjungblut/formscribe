@@ -1,6 +1,5 @@
 """FormScribe."""
 
-from contextlib import suppress
 from formscribe.util import (get_attributes, get_attributes_names)
 
 
@@ -97,8 +96,10 @@ class Form(object):
 
         fields = self.get_fields()
         for field in fields:
-            with suppress(ValidationError):
+            try:
                 self.validate_field(field)
+            except ValidationError:
+                pass
 
         kwargs = {}
         for field, value in self.validated.items():
@@ -133,9 +134,11 @@ class Form(object):
     def get_fields(self):
         fields = []
         for attr in get_attributes(self):
-            with suppress(TypeError):
+            try:
                 if issubclass(attr, Field):
                     fields.append(attr)
+            except TypeError:
+                pass
         return fields
 
     def get_field_dependencies(self, field):
