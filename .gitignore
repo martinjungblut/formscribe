@@ -1,4 +1,7 @@
 *.pyc
 .coverage
+MANIFEST
 __pycache__
+cover
+dist
 virtenv

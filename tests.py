@@ -1,5 +1,5 @@
 from contextlib import suppress
-from formscribe import (Form, Field, ValidationError)
+from formscribe import (Form, Field, ValidationError, SubmitError)
 import hashlib
 import unittest
 
@@ -37,7 +37,7 @@ class LoginForm(Form):
             try:
                 value = int(value)
             except (TypeError, ValueError):
-                raise ValidationError('O código de confirmação é inválido.')
+                raise ValidationError('Invalid confirmation code.')
 
             return value
 
@@ -52,12 +52,12 @@ class LoginForm(Form):
         @staticmethod
         def validate(value):
             if not value:
-                raise ValidationError('O nome de usuário é obrigatório.')
+                raise ValidationError('The username is mandatory.')
 
             try:
                 value = value.lower().strip()
             except AttributeError:
-                raise ValidationError('O nome de usuário é inválido.')
+                raise ValidationError('The username is invalid.')
 
             return value
 
@@ -72,12 +72,12 @@ class LoginForm(Form):
         @staticmethod
         def validate(value):
             if not value:
-                raise ValidationError('A senha é obrigatória.')
+                raise ValidationError('The password is mandatory.')
 
             try:
                 value = int(value)
             except (TypeError, ValueError):
-                raise ValidationError('A senha é inválida.')
+                raise ValidationError('The password is invalid.')
 
             return str(value).strip()
 
@@ -113,7 +113,7 @@ class LoginFormTestCase(FormCheckerTestCase):
         }
         form = LoginForm(data)
         self.assertEqual(len(form.errors), 1)
-        self.assertEqual(form.errors[0].message, 'A senha é obrigatória.')
+        self.assertEqual(form.errors[0].message, 'The password is mandatory.')
         self.assertNotEqual(FormCheckerTestCase.world.get('confirmation_code'),
                             22)
         self.assertNotEqual(FormCheckerTestCase.world.get('username'),
