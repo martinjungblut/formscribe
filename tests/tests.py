@@ -1,4 +1,4 @@
-"""Bare-bones form tests without field relationships."""
+"""FormScribe tests."""
 
 import unittest
 
