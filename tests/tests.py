@@ -1,0 +1,246 @@
+"""Bare-bones form tests without field relationships."""
+
+import unittest
+
+from formscribe import Field
+from formscribe import Form
+from formscribe import SubmitError
+from formscribe import ValidationError
+from tests.helpers import FormScribeTest
+
+
+class LoginForm(Form):
+    class ConfirmationCode(Field):
+        key = 'confirmation_code'
+
+        def validate(self, value):
+            try:
+                value = value.strip()
+            except AttributeError:
+                pass
+
+            try:
+                value = int(value)
+            except (TypeError, ValueError):
+                raise ValidationError('1')
+
+            return value
+
+        def submit(self, value):
+            if not value:
+                raise SubmitError('2')
+            else:
+                FormScribeTest.world['confirmation_code'] = value
+
+    class Username(Field):
+        key = 'username'
+        when_validated = ['confirmation_code']
+
+        def validate(self, value):
+            if not value:
+                raise ValidationError('3')
+
+            try:
+                value = value.lower().strip()
+            except AttributeError:
+                raise ValidationError('4')
+
+            return value
+
+        def submit(self, value):
+            FormScribeTest.world['username'] = value
+
+    class Password(Field):
+        key = 'password'
+        when_value = {'username': 'test_username'}
+
+        def validate(self, value):
+            if not value:
+                raise ValidationError('5')
+
+            try:
+                value = int(value)
+            except (TypeError, ValueError):
+                raise ValidationError('6')
+
+            return str(value).strip()
+
+        def submit(self, value):
+            FormScribeTest.world['password'] = value
+
+    def validate(self, confirmationcode, username, password):
+        if confirmationcode and len(str(confirmationcode)) > 16:
+            raise ValidationError('7')
+        if username and len(username) > 16:
+            raise ValidationError('8')
+        if password and len(str(password)) > 16:
+            raise ValidationError('9')
+
+    def submit(self, confirmationcode, username, password):
+        if confirmationcode == 1:
+            raise SubmitError('10')
+        if username == 'invalid_username':
+            raise SubmitError('11')
+        if password == '12':
+            raise SubmitError('12')
+
+
+class LoginFormTest(FormScribeTest):
+    def test_definition(self):
+        form = LoginForm({})
+        self.assertEqual(form.get_fields(), [
+            form.ConfirmationCode,
+            form.Password,
+            form.Username,
+        ])
+        self.assertEqual(form.get_field_dependencies(form.ConfirmationCode), [])
+        self.assertEqual(form.get_field_dependencies(form.Username),
+                         [form.ConfirmationCode])
+        self.assertEqual(form.get_field_dependencies(form.Password),
+                         [form.Username])
+
+    def test_valid_no_errors(self):
+        data = {
+            'confirmation_code': ' 33 ',
+            'password': ' 12345 ',
+            'username': ' TEST_UsErNaMe ',
+        }
+        form = LoginForm(data)
+        self.assertEqual(len(form.errors), 0)
+        self.assertEqual(FormScribeTest.world.get('confirmation_code'),
+                         33)
+        self.assertEqual(FormScribeTest.world.get('password'), '12345')
+        self.assertEqual(FormScribeTest.world.get('username'),
+                         'test_username')
+
+    def test_invalid_confirmation_code(self):
+        data = {
+            'confirmation_code': ' code ',
+            'password': '12345',
+            'username': 'test_username',
+        }
+        form = LoginForm(data)
+        self.assertEqual(len(form.errors), 1)
+        self.assertEqual(form.errors[0].message,
+                         '1')
+
+        data = {
+            'confirmation_code': ' 0 ',
+            'password': '12345',
+            'username': 'test_username',
+        }
+        form = LoginForm(data)
+        self.assertEqual(len(form.errors), 1)
+        self.assertEqual(form.errors[0].message,
+                         '2')
+
+    def test_invalid_username(self):
+        data = {
+            'confirmation_code': '22',
+            'password': '12345',
+        }
+        form = LoginForm(data)
+        self.assertEqual(len(form.errors), 1)
+        self.assertEqual(form.errors[0].message, '3')
+
+        data = {
+            'confirmation_code': '22',
+            'password': '12345',
+            'username': 10,
+        }
+        form = LoginForm(data)
+        self.assertEqual(len(form.errors), 1)
+        self.assertEqual(form.errors[0].message, '4')
+
+    def test_invalid_password(self):
+        data = {
+            'confirmation_code': '22',
+            'username': 'test_username',
+        }
+        form = LoginForm(data)
+        self.assertEqual(len(form.errors), 1)
+        self.assertEqual(form.errors[0].message, '5')
+        self.assertNotEqual(FormScribeTest.world.get('confirmation_code'), 22)
+        self.assertNotEqual(FormScribeTest.world.get('username'),
+                            'test_username')
+
+        data = {
+            'confirmation_code': '22',
+            'password': 'test_password',
+            'username': 'test_username',
+        }
+        form = LoginForm(data)
+        self.assertEqual(len(form.errors), 1)
+        self.assertEqual(form.errors[0].message, '6')
+        self.assertNotEqual(FormScribeTest.world.get('confirmation_code'), 22)
+        self.assertNotEqual(FormScribeTest.world.get('username'),
+                            'test_username')
+
+    def test_when_value(self):
+        data = {
+            'confirmation_code': '22',
+            'username': 'another_username',
+            'password': '12345',
+        }
+        form = LoginForm(data)
+        self.assertEqual(len(form.errors), 0)
+        self.assertEqual(FormScribeTest.world.get('confirmation_code'), 22)
+        self.assertEqual(FormScribeTest.world.get('username'),
+                         'another_username')
+        self.assertFalse('password' in FormScribeTest.world)
+
+    def test_form_validation(self):
+        data = {
+            'confirmation_code': '1' * 20,
+            'password': '12345',
+            'username': 'test_username',
+        }
+        form = LoginForm(data)
+        self.assertEqual(len(form.errors), 1)
+        self.assertEqual(form.errors[0].message, '7')
+
+        data = {
+            'confirmation_code': '10',
+            'password': '12345',
+            'username': '1' * 20,
+        }
+        form = LoginForm(data)
+        self.assertEqual(len(form.errors), 1)
+        self.assertEqual(form.errors[0].message, '8')
+
+        data = {
+            'confirmation_code': '10',
+            'password': '1' * 20,
+            'username': 'test_username',
+        }
+        form = LoginForm(data)
+        self.assertEqual(len(form.errors), 1)
+        self.assertEqual(form.errors[0].message, '9')
+
+    def test_form_submit(self):
+        data = {
+            'confirmation_code': '1',
+            'password': '12345',
+            'username': 'test_username',
+        }
+        form = LoginForm(data)
+        self.assertEqual(len(form.errors), 1)
+        self.assertEqual(form.errors[0].message, '10')
+
+        data = {
+            'confirmation_code': '10',
+            'password': '12345',
+            'username': 'invalid_username',
+        }
+        form = LoginForm(data)
+        self.assertEqual(len(form.errors), 1)
+        self.assertEqual(form.errors[0].message, '11')
+
+        data = {
+            'confirmation_code': '10',
+            'password': '12',
+            'username': 'test_username',
+        }
+        form = LoginForm(data)
+        self.assertEqual(len(form.errors), 1)
+        self.assertEqual(form.errors[0].message, '12')
