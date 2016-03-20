@@ -37,14 +37,12 @@ class RelatedForm(Form):
             value = hashlib.md5(value.encode('utf-8')).hexdigest()
             return value
 
-    @staticmethod
-    def validate(firstpassword, secondpassword):
+    def validate(self, firstpassword, secondpassword):
         if firstpassword != secondpassword:
             raise ValidationError(1)
         return firstpassword
 
-    @staticmethod
-    def submit(firstpassword, secondpassword):
+    def submit(self, firstpassword, secondpassword):
         FormScribeTest.world['first-password'] = firstpassword
 
 
