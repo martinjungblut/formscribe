@@ -1,7 +1,6 @@
 """FormScribe."""
 
 from formscribe.util import get_attributes
-from formscribe.util import get_attributes_names
 
 
 class ValidationError(Exception):
