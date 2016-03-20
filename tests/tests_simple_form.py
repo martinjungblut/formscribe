@@ -1,6 +1,5 @@
 """Bare-bones form tests without field relationships."""
 
-
 import unittest
 
 from formscribe import Field
@@ -14,8 +13,7 @@ class LoginForm(Form):
     class ConfirmationCode(Field):
         key = 'confirmation_code'
 
-        @staticmethod
-        def validate(value):
+        def validate(self, value):
             try:
                 value = value.strip()
             except AttributeError:
@@ -28,16 +26,14 @@ class LoginForm(Form):
 
             return value
 
-        @staticmethod
-        def submit(value):
+        def submit(self, value):
             FormScribeTest.world['confirmation_code'] = value
 
     class Username(Field):
         key = 'username'
         when_validated = ['confirmation-code']
 
-        @staticmethod
-        def validate(value):
+        def validate(self, value):
             if not value:
                 raise ValidationError('The username is mandatory.')
 
@@ -48,16 +44,14 @@ class LoginForm(Form):
 
             return value
 
-        @staticmethod
-        def submit(value):
+        def submit(self, value):
             FormScribeTest.world['username'] = value
 
     class Password(Field):
         key = 'password'
         when_value = {'username': 'test_username'}
 
-        @staticmethod
-        def validate(value):
+        def validate(self, value):
             if not value:
                 raise ValidationError('The password is mandatory.')
 
@@ -68,8 +62,7 @@ class LoginForm(Form):
 
             return str(value).strip()
 
-        @staticmethod
-        def submit(value):
+        def submit(self, value):
             FormScribeTest.world['password'] = value
 
 

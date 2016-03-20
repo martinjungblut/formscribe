@@ -27,8 +27,7 @@ class LoginForm(Form):
     class Username(Field):
         key = 'username'
         
-        @staticmethod
-        def validate(value):
+        def validate(self, value):
             if not value:
                 raise ValidationError("The username is mandatory.")
             return value
@@ -36,15 +35,13 @@ class LoginForm(Form):
     class Password(Field):
         key = 'password'
         
-        @staticmethod
-        def validate(value):
+        def validate(self, value):
             if not value:
                 raise ValidationError("The password is mandatory.")
             if len(password) < 6:
                 raise ValidationError("The password must be longer than 6 characters.")
             return value
     
-    @staticmethod
     def submit(username, password):
         return do_login(username, password)
 ```
@@ -75,8 +72,7 @@ class CharacterManagement(Form):
     class Race(Field):
         key = 'race'
         
-        @staticmethod
-        def validate(value):
+        def validate(self, value):
             if value not in ('elf', 'orc', 'human'):
                 raise ValidationError("Invalid race.")
             return value
@@ -85,8 +81,7 @@ class CharacterManagement(Form):
         key = 'clan'
         when_value = {'race': 'orc'}
         
-        @staticmethod
-        def validate(value):
+        def validate(self, value):
             if clan not in ('Raz-bagdur', 'Kaz-faktur', 'Mak-sakur'):
                 raise ValidationError('Invalid clan.')
             return value

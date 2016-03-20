@@ -14,8 +14,7 @@ class RelatedForm(Form):
     class FirstPassword(Field):
         key = 'first-password'
 
-        @staticmethod
-        def validate(value):
+        def validate(self, value):
             value = str(value)
             value = value.strip()
 
@@ -28,8 +27,7 @@ class RelatedForm(Form):
     class SecondPassword(Field):
         key = 'second-password'
 
-        @staticmethod
-        def validate(value):
+        def validate(self, value):
             value = str(value)
             value = value.strip()
 
