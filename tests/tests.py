@@ -9,6 +9,22 @@ from formscribe import ValidationError
 from tests.helpers import FormScribeTest
 
 
+class TestForm(unittest.TestCase):
+    def test(self):
+        form = Form({})
+        self.assertEqual(len(form.errors), 0)
+
+
+class TestField(unittest.TestCase):
+    def test_validate(self):
+        with self.assertRaises(NotImplementedError):
+            Field().validate(None)
+
+    def test_submit(self):
+        with self.assertRaises(NotImplementedError):
+            Field().submit(None)
+
+
 class LoginForm(Form):
     class ConfirmationCode(Field):
         key = 'confirmation_code'
@@ -68,7 +84,17 @@ class LoginForm(Form):
         def submit(self, value):
             FormScribeTest.world['password'] = value
 
-    def validate(self, confirmationcode, username, password):
+    # this field does not implement the submit() method,
+    # therefore always raising a NotImplementedError
+    class CSFRCode(Field):
+        key = 'csfr-code'
+
+        def validate(self, value):
+            if value != 'csfr-valid':
+                raise ValidationError('13')
+            return 'csfr-valid'
+
+    def validate(self, confirmationcode, username, password, csfrcode):
         if confirmationcode and len(str(confirmationcode)) > 16:
             raise ValidationError('7')
         if username and len(username) > 16:
@@ -76,7 +102,7 @@ class LoginForm(Form):
         if password and len(str(password)) > 16:
             raise ValidationError('9')
 
-    def submit(self, confirmationcode, username, password):
+    def submit(self, confirmationcode, username, password, csfrcode):
         if confirmationcode == 1:
             raise SubmitError('10')
         if username == 'invalid_username':
@@ -85,15 +111,17 @@ class LoginForm(Form):
             raise SubmitError('12')
 
 
-class LoginFormTest(FormScribeTest):
+class TestLoginForm(FormScribeTest):
     def test_definition(self):
         form = LoginForm({})
         self.assertEqual(form.get_fields(), [
+            form.CSFRCode,
             form.ConfirmationCode,
             form.Password,
             form.Username,
         ])
-        self.assertEqual(form.get_field_dependencies(form.ConfirmationCode), [])
+        self.assertEqual(form.get_field_dependencies(form.ConfirmationCode),
+                         [])
         self.assertEqual(form.get_field_dependencies(form.Username),
                          [form.ConfirmationCode])
         self.assertEqual(form.get_field_dependencies(form.Password),
@@ -101,6 +129,7 @@ class LoginFormTest(FormScribeTest):
 
     def test_valid_no_errors(self):
         data = {
+            'csfr-code': 'csfr-valid',
             'confirmation_code': ' 33 ',
             'password': ' 12345 ',
             'username': ' TEST_UsErNaMe ',
@@ -115,6 +144,7 @@ class LoginFormTest(FormScribeTest):
 
     def test_invalid_confirmation_code(self):
         data = {
+            'csfr-code': 'csfr-valid',
             'confirmation_code': ' code ',
             'password': '12345',
             'username': 'test_username',
@@ -125,6 +155,7 @@ class LoginFormTest(FormScribeTest):
                          '1')
 
         data = {
+            'csfr-code': 'csfr-valid',
             'confirmation_code': ' 0 ',
             'password': '12345',
             'username': 'test_username',
@@ -136,6 +167,7 @@ class LoginFormTest(FormScribeTest):
 
     def test_invalid_username(self):
         data = {
+            'csfr-code': 'csfr-valid',
             'confirmation_code': '22',
             'password': '12345',
         }
@@ -144,6 +176,7 @@ class LoginFormTest(FormScribeTest):
         self.assertEqual(form.errors[0].message, '3')
 
         data = {
+            'csfr-code': 'csfr-valid',
             'confirmation_code': '22',
             'password': '12345',
             'username': 10,
@@ -154,6 +187,7 @@ class LoginFormTest(FormScribeTest):
 
     def test_invalid_password(self):
         data = {
+            'csfr-code': 'csfr-valid',
             'confirmation_code': '22',
             'username': 'test_username',
         }
@@ -165,6 +199,7 @@ class LoginFormTest(FormScribeTest):
                             'test_username')
 
         data = {
+            'csfr-code': 'csfr-valid',
             'confirmation_code': '22',
             'password': 'test_password',
             'username': 'test_username',
@@ -178,6 +213,7 @@ class LoginFormTest(FormScribeTest):
 
     def test_when_value(self):
         data = {
+            'csfr-code': 'csfr-valid',
             'confirmation_code': '22',
             'username': 'another_username',
             'password': '12345',
@@ -191,6 +227,7 @@ class LoginFormTest(FormScribeTest):
 
     def test_form_validation(self):
         data = {
+            'csfr-code': 'csfr-valid',
             'confirmation_code': '1' * 20,
             'password': '12345',
             'username': 'test_username',
@@ -200,6 +237,7 @@ class LoginFormTest(FormScribeTest):
         self.assertEqual(form.errors[0].message, '7')
 
         data = {
+            'csfr-code': 'csfr-valid',
             'confirmation_code': '10',
             'password': '12345',
             'username': '1' * 20,
@@ -209,6 +247,7 @@ class LoginFormTest(FormScribeTest):
         self.assertEqual(form.errors[0].message, '8')
 
         data = {
+            'csfr-code': 'csfr-valid',
             'confirmation_code': '10',
             'password': '1' * 20,
             'username': 'test_username',
@@ -219,6 +258,7 @@ class LoginFormTest(FormScribeTest):
 
     def test_form_submit(self):
         data = {
+            'csfr-code': 'csfr-valid',
             'confirmation_code': '1',
             'password': '12345',
             'username': 'test_username',
@@ -228,6 +268,7 @@ class LoginFormTest(FormScribeTest):
         self.assertEqual(form.errors[0].message, '10')
 
         data = {
+            'csfr-code': 'csfr-valid',
             'confirmation_code': '10',
             'password': '12345',
             'username': 'invalid_username',
@@ -237,6 +278,7 @@ class LoginFormTest(FormScribeTest):
         self.assertEqual(form.errors[0].message, '11')
 
         data = {
+            'csfr-code': 'csfr-valid',
             'confirmation_code': '10',
             'password': '12',
             'username': 'test_username',
