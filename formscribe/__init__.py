@@ -118,6 +118,7 @@ class Form(object):
     def __init__(self, data):
         self.data = OrderedDict(sorted(data.items(), key=itemgetter(0)))
         self.errors = []
+        self.invalidated = []
         self.regex_values = {}
         self.validated = []
         self.values = {}
@@ -206,17 +207,18 @@ class Form(object):
 
         # validate the field's dependencies first
         for dependency in self.get_field_dependencies(field):
-            try:
-                value = self.validate_field(dependency)
-            # do not validate the field if one of its dependencies
+            value = self.validate_field(dependency)
+            # do not validate the field if one of its dependencies'
             # values don't match the field's requirements
-            except ValidationError:
-                if dependency.key in field.when_validated:
+            if dependency.key in field.when_value:
+                if field.when_value[dependency.key] != value:
                     return
-            else:
-                if dependency.key in field.when_value:
-                    if field.when_value[dependency.key] != value:
-                        return
+
+        # do not validate the field if one of its dependencies
+        # couldn't be validated
+        if any(dependency in self.invalidated for dependency in
+               self.get_field_dependencies(field)):
+            return
 
         # validate the field itself
         if field.key:
@@ -224,9 +226,7 @@ class Form(object):
                 value = field().validate(self.data.get(field.key))
             except ValidationError as error:
                 self.errors.append(error)
-                # reraised due to the recursiveness involving
-                # dependencies and when_validated support
-                raise error
+                self.invalidated.append(field)
             else:
                 self.values[field] = value
                 return value

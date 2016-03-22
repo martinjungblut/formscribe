@@ -22,6 +22,7 @@ class LoginForm(Form):
             except (TypeError, ValueError):
                 raise ValidationError('1')
 
+            FormScribeTest.world['confirmation_code'] = True
             return value
 
         def submit(self, value):
@@ -43,6 +44,7 @@ class LoginForm(Form):
             except AttributeError:
                 raise ValidationError('4')
 
+            FormScribeTest.world['username'] = True
             return value
 
         def submit(self, value):
@@ -61,6 +63,7 @@ class LoginForm(Form):
             except (TypeError, ValueError):
                 raise ValidationError('6')
 
+            FormScribeTest.world['password'] = True
             return str(value).strip()
 
         def submit(self, value):
@@ -206,6 +209,29 @@ class TestLoginForm(FormScribeTest):
         self.assertEqual(FormScribeTest.world.get('username'),
                          'another_username')
         self.assertFalse('password' in FormScribeTest.world)
+
+    def test_when_validated(self):
+        data = {
+            'csfr-code': 'cfsr-invalid',
+            'confirmation_code': 'invalid',
+            'username': 'another_username',
+        }
+        form = LoginForm(data)
+        self.assertEqual(len(form.errors), 2)
+        self.assertEqual(form.errors[0].message, '13')
+        self.assertEqual(form.errors[1].message, '1')
+        self.assertTrue('username' not in FormScribeTest.world)
+
+        data = {
+            'csfr-code': 'cfsr-invalid',
+            'confirmation_code': '22',
+            'username': 'another_username',
+        }
+        form = LoginForm(data)
+        self.assertEqual(len(form.errors), 1)
+        self.assertEqual(form.errors[0].message, '13')
+        self.assertEqual(FormScribeTest.world.get('confirmation_code'), True)
+        self.assertEqual(FormScribeTest.world.get('username'), True)
 
     def test_form_validation(self):
         data = {
