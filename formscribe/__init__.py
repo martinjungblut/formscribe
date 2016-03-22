@@ -1,6 +1,21 @@
 """FormScribe."""
 
+import re
+
 from formscribe.util import get_attributes
+
+
+class InvalidFieldError(Exception):
+    """
+    Raised whenever a field has an invalid set of attributes.
+
+    Args:
+        message (str): the message describing the error.
+    """
+
+    def __init__(self, message):
+        super().__init__()
+        self.message = message
 
 
 class ValidationError(Exception):
@@ -47,9 +62,20 @@ class Field(object):
                                attribute of other Field objects.
     """
 
-    key = ''
+    key = None
+    regex_group = None
+    regex_group_key = None
+    regex_key = None
     when_validated = []
     when_value = {}
+
+    def __init__(self):
+        if self.regex_key and not self.regex_group:
+            raise InvalidFieldError('Regex group is required.')
+        if self.regex_key and not self.regex_group_key:
+            raise InvalidFieldError('Regex group key is required.')
+        if self.regex_key and self.key:
+            raise InvalidFieldError('Regex key and key are incompatible.')
 
     def validate(self, value):
         """
@@ -90,19 +116,38 @@ class Form(object):
     def __init__(self, data):
         self.data = data
         self.errors = []
-        self.validated = {}
+        self.regex_values = {}
+        self.validated = []
+        self.values = {}
 
         # validate all fields and their dependencies
         fields = self.get_fields()
         for field in fields:
+            # instantiate the field so its InvalidFieldError exceptions
+            # are raised
+            field()
+            if field.regex_key:
+                rg = field.regex_group
+                rgk = field.regex_group_key
+                try:
+                    self.regex_values[rg][rgk] = []
+                except KeyError:
+                    self.regex_values[rg] = {}
+                    self.regex_values[rg][rgk] = []
             try:
                 self.validate_field(field)
             except ValidationError:
                 pass
 
-        # convert all field's class names to valid variable names
+        # convert all field's values to a dictionary which will be used
+        # for the form's validation and submitting
         kwargs = {field.__name__.lower(): value
-                  for field, value in self.validated.items()}
+                  for field, value in self.values.items()}
+        for group, attributes in self.regex_values.items():
+            values = list(filter((lambda x: x if all(x) else None),
+                                 zip(*(attributes.values()))))
+            kwargs[group] = [dict(zip(attributes.keys(), value))
+                             for value in values]
 
         # validate the form itself
         try:
@@ -114,7 +159,7 @@ class Form(object):
 
         # submit the form
         if not self.errors:
-            for field, value in self.validated.items():
+            for field, value in self.values.items():
                 if value is not None:
                     try:
                         field().submit(value)
@@ -153,33 +198,39 @@ class Form(object):
         if field in self.validated:
             return
 
-        self.validated[field] = None
+        self.validated.append(field)
+        if field.key:
+            self.values[field] = None
 
         # validate the field's dependencies first
         for dependency in self.get_field_dependencies(field):
-            if dependency not in self.validated:
-                try:
-                    value = self.validate_field(dependency)
-                    # do not validate the field if one of its dependencies
-                    # values don't match the field's requirements
-                    if dependency.key in field.when_value:
-                        if field.when_value[dependency.key] != value:
-                            return
-                except ValidationError:
-                    pass
+            if dependency.key:
+                value = self.validate_field(dependency)
+                # do not validate the field if one of its dependencies
+                # values don't match the field's requirements
+                if dependency.key in field.when_value:
+                    if field.when_value[dependency.key] != value:
+                        return
 
         # validate the field itself
-        try:
-            value = field().validate(self.data.get(field.key))
-        except ValidationError as error:
-            self.errors.append(error)
-            # the error is reraised here since the field may have been validated
-            # as a dependency of another field, and we want to catch
-            # ValidationError exceptions on line 162
-            raise error
-        else:
-            self.validated[field] = value
-            return value
+        if field.key:
+            try:
+                value = field().validate(self.data.get(field.key))
+                self.values[field] = value
+                return value
+            except ValidationError as error:
+                self.errors.append(error)
+
+        if field.regex_key:
+            rg = field.regex_group
+            rgk = field.regex_group_key
+            for key, value in dict(sorted(self.data.items())).items():
+                if re.findall(field.regex_key, key):
+                    try:
+                        value = field().validate(value)
+                        self.regex_values[rg][rgk].append(value)
+                    except ValidationError as error:
+                        self.errors.append(error)
 
     def validate(self, *args, **kwargs):
         raise NotImplementedError()

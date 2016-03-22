@@ -1,28 +1,10 @@
-"""FormScribe tests."""
-
-import unittest
+"""Login form definition and tests, test FormScribe 0.1 features."""
 
 from formscribe import Field
 from formscribe import Form
 from formscribe import SubmitError
 from formscribe import ValidationError
 from tests.helpers import FormScribeTest
-
-
-class TestForm(unittest.TestCase):
-    def test(self):
-        form = Form({})
-        self.assertEqual(len(form.errors), 0)
-
-
-class TestField(unittest.TestCase):
-    def test_validate(self):
-        with self.assertRaises(NotImplementedError):
-            Field().validate(None)
-
-    def test_submit(self):
-        with self.assertRaises(NotImplementedError):
-            Field().submit(None)
 
 
 class LoginForm(Form):
