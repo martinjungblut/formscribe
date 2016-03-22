@@ -1,6 +1,8 @@
 """FormScribe."""
 
 import re
+from collections import OrderedDict
+from operator import itemgetter
 
 from formscribe.util import get_attributes
 
@@ -114,7 +116,7 @@ class Field(object):
 
 class Form(object):
     def __init__(self, data):
-        self.data = data
+        self.data = OrderedDict(sorted(data.items(), key=itemgetter(0)))
         self.errors = []
         self.regex_values = {}
         self.validated = []
@@ -127,13 +129,13 @@ class Form(object):
             # are raised
             field()
             if field.regex_key:
-                rg = field.regex_group
-                rgk = field.regex_group_key
+                group = field.regex_group
+                group_key = field.regex_group_key
                 try:
-                    self.regex_values[rg][rgk] = []
+                    self.regex_values[group][group_key] = []
                 except KeyError:
-                    self.regex_values[rg] = {}
-                    self.regex_values[rg][rgk] = []
+                    self.regex_values[group] = {}
+                    self.regex_values[group][group_key] = []
             try:
                 self.validate_field(field)
             except ValidationError:
@@ -145,7 +147,7 @@ class Form(object):
                   for field, value in self.values.items()}
         for group, attributes in self.regex_values.items():
             values = list(filter((lambda x: x if all(x) else None),
-                                 zip(*(attributes.values()))))
+                                 zip(*attributes.values())))
             kwargs[group] = [dict(zip(attributes.keys(), value))
                              for value in values]
 
@@ -204,10 +206,14 @@ class Form(object):
 
         # validate the field's dependencies first
         for dependency in self.get_field_dependencies(field):
-            if dependency.key:
+            try:
                 value = self.validate_field(dependency)
-                # do not validate the field if one of its dependencies
-                # values don't match the field's requirements
+            # do not validate the field if one of its dependencies
+            # values don't match the field's requirements
+            except ValidationError:
+                if dependency.key in field.when_validated:
+                    return
+            else:
                 if dependency.key in field.when_value:
                     if field.when_value[dependency.key] != value:
                         return
@@ -216,19 +222,22 @@ class Form(object):
         if field.key:
             try:
                 value = field().validate(self.data.get(field.key))
-                self.values[field] = value
-                return value
             except ValidationError as error:
                 self.errors.append(error)
-
-        if field.regex_key:
-            rg = field.regex_group
-            rgk = field.regex_group_key
-            for key, value in dict(sorted(self.data.items())).items():
+                # reraised due to the recursiveness involving
+                # dependencies and when_validated support
+                raise error
+            else:
+                self.values[field] = value
+                return value
+        elif field.regex_key:
+            group = field.regex_group
+            group_key = field.regex_group_key
+            for key, value in self.data.items():
                 if re.findall(field.regex_key, key):
                     try:
                         value = field().validate(value)
-                        self.regex_values[rg][rgk].append(value)
+                        self.regex_values[group][group_key].append(value)
                     except ValidationError as error:
                         self.errors.append(error)
 

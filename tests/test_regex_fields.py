@@ -43,8 +43,10 @@ class ProductManagementForm(Form):
                 FormScribeTest.world['product_descriptions'] = []
                 FormScribeTest.world['product_descriptions'].append(value)
 
-    def submit(self, products):
+    def validate(self, products):
         FormScribeTest.world['products'] = []
+
+    def submit(self, products):
         for product in products:
             FormScribeTest.world['products'].append({
                 'name': product['name'],
@@ -82,13 +84,7 @@ class TestProductManagementForm(FormScribeTest):
             'product-name-2': 'second-product-name',
             'product-description-2': 33,
         }
-        expected = [
-            {
-                'name': 'first-product-name',
-                'description': 'first-product-description',
-            }
-        ]
         form = ProductManagementForm(data)
         self.assertEqual(len(form.errors), 1)
         self.assertEqual(form.errors[0].message, '15')
-        self.assertEqual(FormScribeTest.world['products'], expected)
+        self.assertEqual(FormScribeTest.world['products'], [])
