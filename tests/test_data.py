@@ -4,7 +4,6 @@ to expected sets.
 """
 
 import unittest
-from contextlib import suppress
 from datetime import datetime
 from datetime import time
 
@@ -15,7 +14,7 @@ from formscribe import ValidationError
 
 class ProfileManagementForm(Form):
     class ProfileID(Field):
-        key = 'profile_id'
+        key = 'profile-id'
 
         def validate(self, value):
             try:
@@ -29,8 +28,10 @@ class ProfileManagementForm(Form):
         key = 'name'
 
         def validate(self, value):
-            with suppress(AttributeError):
+            try:
                 value = value.strip()
+            except AttributeError:
+                pass
             if not value:
                 raise ValidationError('O nome é obrigatório.')
             return value
@@ -49,8 +50,10 @@ class ProfileManagementForm(Form):
 
         def validate(self, value):
             invalid_message = 'Número de horas da expiração inválido.'
-            with suppress(AttributeError):
+            try:
                 value = value.strip()
+            except AttributeError:
+                pass
             try:
                 value = int(value)
             except (TypeError, ValueError):
@@ -67,8 +70,10 @@ class ProfileManagementForm(Form):
 
         def validate(self, value):
             invalid_message = 'Número de minutos da expiração inválido.'
-            with suppress(AttributeError):
+            try:
                 value = value.strip()
+            except AttributeError:
+                pass
             try:
                 value = int(value)
             except (TypeError, ValueError):
@@ -87,8 +92,10 @@ class ProfileManagementForm(Form):
 
         def validate(self, value):
             invalid_message = 'Número de segundos da expiração inválido.'
-            with suppress(AttributeError):
+            try:
                 value = value.strip()
+            except AttributeError:
+                pass
             try:
                 value = int(value)
             except (TypeError, ValueError):
@@ -113,8 +120,10 @@ class ProfileManagementForm(Form):
 
         def validate(self, value):
             invalid_message = 'Número de horas de ociosidade inválido.'
-            with suppress(AttributeError):
+            try:
                 value = value.strip()
+            except AttributeError:
+                pass
             try:
                 value = int(value)
             except (TypeError, ValueError):
@@ -131,8 +140,10 @@ class ProfileManagementForm(Form):
 
         def validate(self, value):
             invalid_message = 'Número de minutos de ociosidade inválido.'
-            with suppress(AttributeError):
+            try:
                 value = value.strip()
+            except AttributeError:
+                pass
             try:
                 value = int(value)
             except (TypeError, ValueError):
@@ -151,8 +162,10 @@ class ProfileManagementForm(Form):
 
         def validate(self, value):
             invalid_message = 'Número de segundos de ociosidade inválido.'
-            with suppress(AttributeError):
+            try:
                 value = value.strip()
+            except AttributeError:
+                pass
             try:
                 value = int(value)
             except (TypeError, ValueError):
@@ -253,8 +266,10 @@ class ProfileManagementForm(Form):
             invalid_message = """
             Número de horas do tempo máximo de utilização inválido.
             """
-            with suppress(AttributeError):
+            try:
                 value = value.strip()
+            except AttributeError:
+                pass
             try:
                 value = int(value)
             except (TypeError, ValueError):
@@ -273,8 +288,10 @@ class ProfileManagementForm(Form):
             invalid_message = """
             Número de minutos do tempo máximo de utilização inválido.
             """
-            with suppress(AttributeError):
+            try:
                 value = value.strip()
+            except AttributeError:
+                pass
             try:
                 value = int(value)
             except (TypeError, ValueError):
@@ -352,8 +369,24 @@ class ProfileManagementForm(Form):
                 raise ValidationError(message)
 
 
-class Test(unittest.TestCase):
-    def test(self):
+class TestData(unittest.TestCase):
+    def setUp(self):
+        self.expected_logintimes = [
+            {
+                'day': {'day': 3},
+                'end': time(hour=15),
+                'id': 'new',
+                'start': time(hour=12),
+            },
+            {
+                'day': {'day': 5},
+                'end': time(hour=10),
+                'id': 5,
+                'start': time(hour=7),
+            },
+        ]
+
+    def test_everything_enabled(self):
         data = {
             'bandwidth-limit-enabled': '1',
             'default': '',
@@ -375,7 +408,7 @@ class Test(unittest.TestCase):
             'max-session-time-hours': '15',
             'max-session-time-minutes': '12',
             'name': 'teste',
-            'profile_id': '350',
+            'profile-id': '350',
             'sessiontimeout-enabled': '1',
             'sessiontimeout-hours': '23',
             'sessiontimeout-minutes': '15',
@@ -397,7 +430,7 @@ class Test(unittest.TestCase):
             'max-session-time-hours': 15,
             'max-session-time-minutes': 12,
             'name': 'teste',
-            'profile_id': 350,
+            'profile-id': 350,
             'sessiontimeout-enabled': True,
             'sessiontimeout-hours': 23,
             'sessiontimeout-minutes': 15,
@@ -416,23 +449,81 @@ class Test(unittest.TestCase):
                     flag = True
             message = "%s wasn't validated." % key
             self.assertTrue(flag, message)
+        self.assertEqual(len(form.errors), 0)
 
-        logintimes = [
-            {
-                'day': {'day': 3},
-                'end': time(hour=15),
-                'id': 'new',
-                'start': time(hour=12),
-            },
-            {
-                'day': {'day': 5},
-                'end': time(hour=10),
-                'id': 5,
-                'start': time(hour=7),
-            },
-        ]
         kwargs = form.build_kwargs()
         self.assertTrue(kwargs['logintimes'])
-        for logintime in logintimes:
+        for logintime in self.expected_logintimes:
+            message = 'Logintime {0} not in logintimes.'.format(str(logintime))
+            self.assertTrue(logintime in kwargs['logintimes'], message)
+
+    def test_some_enabled(self):
+        data = {
+            'bandwidth-limit-enabled': '1',
+            'default': '1',
+            'idletimeout-enabled': '1',
+            'idletimeout-hours': '23',
+            'idletimeout-minutes': '15',
+            'idletimeout-seconds': '30',
+            'login-time-1-day': 3,
+            'login-time-1-end': '15:00',
+            'login-time-1-id': 'new',
+            'login-time-1-start': '12:00',
+            'login-time-2-day': 5,
+            'login-time-2-end': '10:00',
+            'login-time-2-id': '5',
+            'login-time-2-start': '07:00',
+            'max-bandwidth-down': '1024',
+            'max-bandwidth-up': '768',
+            'max-session-time-enabled': '1',
+            'max-session-time-hours': '15',
+            'max-session-time-minutes': '12',
+            'name': 'teste',
+            'profile-id': '350',
+            'sessiontimeout-enabled': '',
+            'sessiontimeout-hours': '23',
+            'sessiontimeout-minutes': '15',
+            'sessiontimeout-seconds': '12',
+            'simultaneous-use': '30',
+            'simultaneous-use-enabled': '',
+            'voucher-profile': '',
+        }
+        expected = {
+            'bandwidth-limit-enabled': True,
+            'default': True,
+            'idletimeout-enabled': True,
+            'idletimeout-hours': 23,
+            'idletimeout-minutes': 15,
+            'idletimeout-seconds': 30,
+            'max-bandwidth-down': 1024,
+            'max-bandwidth-up': 768,
+            'max-session-time-enabled': True,
+            'max-session-time-hours': 15,
+            'max-session-time-minutes': 12,
+            'name': 'teste',
+            'profile-id': 350,
+            'sessiontimeout-enabled': False,
+            'sessiontimeout-hours': None,
+            'sessiontimeout-minutes': None,
+            'sessiontimeout-seconds': None,
+            'simultaneous-use': None,
+            'simultaneous-use-enabled': False,
+            'voucher-profile': False,
+        }
+        form = ProfileManagementForm(data)
+        for key, value in expected.items():
+            flag = False
+            for validated in form.validated:
+                message = "Field wasn't validated correctly: %s" % validated
+                if validated.key == key:
+                    self.assertEqual(form.values[validated], value, message)
+                    flag = True
+            message = "%s wasn't validated." % key
+            self.assertTrue(flag, message)
+        self.assertEqual(len(form.errors), 0)
+
+        kwargs = form.build_kwargs()
+        self.assertTrue(kwargs['logintimes'])
+        for logintime in self.expected_logintimes:
             message = 'Logintime {0} not in logintimes.'.format(str(logintime))
             self.assertTrue(logintime in kwargs['logintimes'], message)

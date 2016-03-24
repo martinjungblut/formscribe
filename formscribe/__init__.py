@@ -196,7 +196,7 @@ class Form(object):
                 dependencies.append(possible_dependency)
         return dependencies
 
-    def validate_field(self, field, dependency=False):
+    def validate_field(self, field):
         # no need to revalidate if field was already validated
         if field in self.validated:
             return
@@ -212,14 +212,12 @@ class Form(object):
         for dependency in self.get_field_dependencies(field):
             # dependencies also must not be validated if they already were
             if dependency not in self.validated:
-                value = self.validate_field(dependency)
-                # do not validate the field if one of its dependencies'
-                # values don't match the field's requirements
-                try:
-                    if field.when_value[dependency.key] != value:
-                        return
-                except KeyError:
-                    pass
+                self.validate_field(dependency)
+            try:
+                if field.when_value[dependency.key] != self.values[dependency]:
+                    return
+            except KeyError:
+                pass
 
         # do not validate the field if one of its dependencies
         # couldn't be validated
@@ -231,12 +229,11 @@ class Form(object):
         if field.key:
             try:
                 value = field().validate(self.data.get(field.key))
+                self.values[field] = value
+                return value
             except ValidationError as error:
                 self.errors.append(error)
                 self.invalidated.append(field)
-            else:
-                self.values[field] = value
-                return value
         elif field.regex_key:
             group = field.regex_group
             group_key = field.regex_group_key
