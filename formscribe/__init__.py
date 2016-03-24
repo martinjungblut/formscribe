@@ -142,19 +142,9 @@ class Form(object):
             except ValidationError:
                 pass
 
-        # convert all field's values to a dictionary which will be used
-        # for the form's validation and submitting
-        kwargs = {field.__name__.lower(): value
-                  for field, value in self.values.items()}
-        for group, attributes in self.regex_values.items():
-            values = list(filter((lambda x: x if all(x) else None),
-                                 zip(*attributes.values())))
-            kwargs[group] = [dict(zip(attributes.keys(), value))
-                             for value in values]
-
         # validate the form itself
         try:
-            self.validate(**kwargs)
+            self.validate(**self.build_kwargs())
         except ValidationError as error:
             self.errors.append(error)
         except NotImplementedError:
@@ -171,11 +161,21 @@ class Form(object):
                     except NotImplementedError:
                         pass
             try:
-                self.submit(**kwargs)
+                self.submit(**self.build_kwargs())
             except SubmitError as error:
                 self.errors.append(error)
             except NotImplementedError:
                 pass
+
+    def build_kwargs(self):
+        kwargs = {field.__name__.lower(): value
+                  for field, value in self.values.items()}
+        for group, attributes in self.regex_values.items():
+            values = list(filter((lambda x: x if all(x) else None),
+                                 zip(*attributes.values())))
+            kwargs[group] = [dict(zip(attributes.keys(), value))
+                             for value in values]
+        return kwargs
 
     def get_fields(self):
         fields = []
@@ -196,23 +196,30 @@ class Form(object):
                 dependencies.append(possible_dependency)
         return dependencies
 
-    def validate_field(self, field):
+    def validate_field(self, field, dependency=False):
         # no need to revalidate if field was already validated
         if field in self.validated:
             return
 
+        # make sure this field isn't validated twice
         self.validated.append(field)
+
+        # it field is key-based, set its default value to None
         if field.key:
             self.values[field] = None
 
         # validate the field's dependencies first
         for dependency in self.get_field_dependencies(field):
-            value = self.validate_field(dependency)
-            # do not validate the field if one of its dependencies'
-            # values don't match the field's requirements
-            if dependency.key in field.when_value:
-                if field.when_value[dependency.key] != value:
-                    return
+            # dependencies also must not be validated if they already were
+            if dependency not in self.validated:
+                value = self.validate_field(dependency)
+                # do not validate the field if one of its dependencies'
+                # values don't match the field's requirements
+                try:
+                    if field.when_value[dependency.key] != value:
+                        return
+                except KeyError:
+                    pass
 
         # do not validate the field if one of its dependencies
         # couldn't be validated
