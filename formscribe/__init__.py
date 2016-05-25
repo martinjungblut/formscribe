@@ -1,4 +1,9 @@
-"""FormScribe."""
+"""
+FormScribe is a simple and powerful form validation library that's expressive,
+easy to use and framework agnostic. It supports dynamic dependencies,
+post-validation actions, has a built-in type validation system,
+and is easily extensible.
+"""
 
 import re
 from collections import OrderedDict
@@ -48,7 +53,39 @@ class SubmitError(Exception):
         self.message = message
 
 
-class Field(object):
+class MetaField(type):
+    """Field metaclass."""
+
+    def __call__(cls, *args, **kwargs):
+        instance = object.__new__(cls, *args, **kwargs)
+
+        try:
+            automatically_validate = kwargs['automatically_validate']
+        except KeyError:
+            try:
+                automatically_validate = args[1]
+            except IndexError:
+                automatically_validate = True
+
+        try:
+            value = kwargs['value']
+        except KeyError:
+            try:
+                value = args[0]
+            except IndexError:
+                pass
+
+        if automatically_validate:
+            try:
+                return instance.validate(value)
+            except NameError:
+                pass
+
+        instance.__init__()
+        return instance
+
+
+class Field(object, metaclass=MetaField):
     """
     Represents an HTML field.
 
@@ -128,7 +165,7 @@ class Form(object):
         for field in fields:
             # instantiate the field so its InvalidFieldError exceptions
             # are raised
-            field()
+            field(automatically_validate=False)
             if field.regex_key:
                 group = field.regex_group
                 group_key = field.regex_group_key
@@ -165,7 +202,7 @@ class Form(object):
             for field, value in self.values.items():
                 if value is not None:
                     try:
-                        field().submit(value)
+                        field(automatically_validate=False).submit(value)
                     except SubmitError as error:
                         self.errors.append(error)
                     except NotImplementedError:
@@ -223,7 +260,8 @@ class Form(object):
         # validate the field itself
         if field.key:
             try:
-                value = field().validate(self.data.get(field.key))
+                value = field(value=self.data.get(field.key),
+                              automatically_validate=True)
             except ValidationError as error:
                 self.errors.append(error)
                 self.invalidated.append(field)
@@ -236,7 +274,7 @@ class Form(object):
             for key, value in self.data.items():
                 if re.findall(field.regex_key, key):
                     try:
-                        value = field().validate(value)
+                        value = field(value=value, automatically_validate=True)
                         self.regex_values[group][group_key].append(value)
                     except ValidationError as error:
                         self.errors.append(error)
