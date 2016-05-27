@@ -9,83 +9,14 @@ import re
 from collections import OrderedDict
 from operator import itemgetter
 
+from formscribe.error import InvalidFieldError
+from formscribe.error import SubmitError
+from formscribe.error import ValidationError
+from formscribe.meta import FieldMeta
 from formscribe.util import get_attributes
 
 
-class InvalidFieldError(Exception):
-    """
-    Raised whenever a field has an invalid set of attributes.
-
-    Args:
-        message (str): the message describing the error.
-    """
-
-    def __init__(self, message):
-        super().__init__()
-        self.message = message
-
-
-class ValidationError(Exception):
-    """
-    Raised whenever a validation fails.
-    Should be raised from the Form.validate() method.
-
-    Args:
-        message (str): the message describing the error.
-    """
-
-    def __init__(self, message):
-        super().__init__()
-        self.message = message
-
-
-class SubmitError(Exception):
-    """
-    Raised whenever a given value can't be submitted.
-    Should be raised from the Form.submit() method.
-
-    Args:
-        message (str): the message describing the error.
-    """
-
-    def __init__(self, message):
-        super().__init__()
-        self.message = message
-
-
-class MetaField(type):
-    """Field metaclass."""
-
-    def __call__(cls, *args, **kwargs):
-        instance = object.__new__(cls, *args, **kwargs)
-
-        try:
-            automatically_validate = kwargs['automatically_validate']
-        except KeyError:
-            try:
-                automatically_validate = args[1]
-            except IndexError:
-                automatically_validate = True
-
-        try:
-            value = kwargs['value']
-        except KeyError:
-            try:
-                value = args[0]
-            except IndexError:
-                pass
-
-        if automatically_validate:
-            try:
-                return instance.validate(value)
-            except NameError:
-                pass
-
-        instance.__init__()
-        return instance
-
-
-class Field(object, metaclass=MetaField):
+class Field(object, metaclass=FieldMeta):
     """
     Represents an HTML field.
 
