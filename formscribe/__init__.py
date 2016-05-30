@@ -9,7 +9,6 @@ import re
 from collections import OrderedDict
 from operator import itemgetter
 
-from formscribe.error import InvalidFieldError
 from formscribe.error import SubmitError
 from formscribe.error import ValidationError
 from formscribe.meta import FieldMeta
@@ -32,6 +31,7 @@ class Field(object, metaclass=FieldMeta):
                                attribute of other Field objects.
     """
 
+    enabled = True
     key = None
     regex_group = None
     regex_group_key = None
@@ -40,19 +40,14 @@ class Field(object, metaclass=FieldMeta):
     when_value = {}
 
     def __init__(self):
-        if self.regex_key and not self.regex_group:
-            raise InvalidFieldError('Regex group is required.')
-        if self.regex_key and not self.regex_group_key:
-            raise InvalidFieldError('Regex group key is required.')
-        if self.regex_key and self.key:
-            raise InvalidFieldError('Regex key and key are incompatible.')
+        pass
 
     def validate(self, value):
         """
         This method performs value-based validation for a given HTML field.
 
         Notes:
-            You should always override this method. It must always be static.
+            You should always override this method.
 
         Args:
             value (object): object fetched from the dict-like object provided
@@ -72,7 +67,7 @@ class Field(object, metaclass=FieldMeta):
         validated, and is ready to be submitted.
 
         Notes:
-            You should always override this method. It must always be static.
+            You should always override this method.
 
         Args:
             value (object): object to be submitted. Its value is always the
@@ -167,6 +162,15 @@ class Form(object):
     def validate_field(self, field):
         # no need to revalidate if field was already validated
         if field in self.validated:
+            return
+
+        # bail out if the 'enabled' callable/attribute is not True
+        instance = field(automatically_validate=False)
+        try:
+            enabled = instance.enabled()
+        except TypeError:
+            enabled = instance.enabled
+        if not enabled:
             return
 
         # make sure this field isn't validated twice

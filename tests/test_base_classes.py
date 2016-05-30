@@ -4,7 +4,7 @@ import unittest
 
 from formscribe import Field
 from formscribe import Form
-from formscribe import InvalidFieldError
+from formscribe.error import InvalidFieldError
 
 
 class TestForm(unittest.TestCase):

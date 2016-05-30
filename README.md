@@ -29,7 +29,7 @@ class LoginForm(Form):
         
         def validate(self, value):
             if not value:
-                raise ValidationError("The username is mandatory.")
+                raise ValidationError('The username is mandatory.')
             return value
 
     class Password(Field):
@@ -37,9 +37,9 @@ class LoginForm(Form):
         
         def validate(self, value):
             if not value:
-                raise ValidationError("The password is mandatory.")
+                raise ValidationError('The password is mandatory.')
             if len(password) < 6:
-                raise ValidationError("The password must be longer than 6 characters.")
+                raise ValidationError('The password must be longer than 6 characters.')
             return value
     
     def submit(username, password):
@@ -63,8 +63,9 @@ def login():
         return flask.render_template('login.html')
 ```
 
-### You mentioned dynamic dependencies
-It is possible to specify a given field should only be validated when another group of fields has also been validated, or when they have a certain value.
+### Dynamic dependency support
+It is possible to specify a given field should only be validated when another group of fields has also been validated, or when they have a certain value. In the example below, the ```Clan``` field will only be validated when the value of ```race``` is ```orc```. If it isn't, then that field will be ignored altogether.
+
 ```
 from formscribe import (Field, Form, ValidationError)
 
@@ -74,7 +75,7 @@ class CharacterManagement(Form):
         
         def validate(self, value):
             if value not in ('elf', 'orc', 'human'):
-                raise ValidationError("Invalid race.")
+                raise ValidationError('Invalid race.')
             return value
     
     class Clan(Field):
@@ -86,3 +87,14 @@ class CharacterManagement(Form):
                 raise ValidationError('Invalid clan.')
             return value
 ```
+
+### Changelog
+#### 0.3.0
+ 1. Added the ```enabled``` Field property, which defines whether a given Field object is enabled or not. Disabled fields aren't taken into account during validation. This property may be a static attribute, a callable, or an actual Python property.
+ 2. A Field's ```__init__``` method may now be used to set attributes, just as you would do with any other Python object. You may then use those attributes normally in the ```validate()``` method, since they now belong to the field's instance.
+
+### To do
+ 1. Add Python 2.6 and 2.7 support.
+ 2. Add a neat type system, so that code is more reusable and modular.
+ 3. Provide a good way for developers to test their forms without having to emulate global state.
+ 4. Write good documentation using Sphinx.
