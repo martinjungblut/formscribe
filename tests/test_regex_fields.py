@@ -88,3 +88,41 @@ class TestProductManagementForm(FormScribeTest):
         self.assertEqual(len(form.errors), 1)
         self.assertEqual(form.errors[0].message, '15')
         self.assertEqual(FormScribeTest.world['products'], [])
+
+
+class ItemRegexForm(Form):
+    class FirstItem(Field):
+        regex_group = 'items'
+        regex_group_key = 'enabled'
+        regex_key = r'item-(\w+)-enabled'
+
+        def validate(self, value):
+            return bool(value)
+
+    class SecondItem(Field):
+        regex_group = 'items'
+        regex_group_key = 'amount'
+        regex_key = r'item-(\w+)-amount'
+
+        def validate(self, value):
+            return int(value)
+
+    def submit(self, items):
+        FormScribeTest.world['items'] = items
+
+
+class TestMatchRegex(FormScribeTest):
+    def test(self):
+        data = {
+            'item-bar-amount': 5,
+            'item-bar-enabled': 1,
+            'item-foo-amount': 10,
+            'item-foo-enabled': 1,
+        }
+        expected = [
+            {'enabled': True, 'amount': 5, 'matches': ['bar']},
+            {'enabled': True, 'amount': 10, 'matches': ['foo']},
+        ]
+        form = ItemRegexForm(data)
+        self.assertEqual(len(form.errors), 0)
+        self.assertEqual(FormScribeTest.world['items'], expected)

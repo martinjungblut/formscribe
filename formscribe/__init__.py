@@ -96,9 +96,11 @@ class Form(object):
                 group = field.regex_group
                 group_key = field.regex_group_key
                 try:
+                    self.regex_values[group]['matches'] = []
                     self.regex_values[group][group_key] = []
                 except KeyError:
                     self.regex_values[group] = {}
+                    self.regex_values[group]['matches'] = []
                     self.regex_values[group][group_key] = []
             try:
                 self.validate_field(field)
@@ -211,10 +213,12 @@ class Form(object):
             group = field.regex_group
             group_key = field.regex_group_key
             for key, value in self.data.items():
-                if re.findall(field.regex_key, key):
+                all_matches = re.findall(field.regex_key, key)
+                if all_matches:
                     try:
                         value = field(value=value, automatically_validate=True)
                         self.regex_values[group][group_key].append(value)
+                        self.regex_values[group]['matches'].append(all_matches)
                     except ValidationError as error:
                         self.errors.append(error)
 
