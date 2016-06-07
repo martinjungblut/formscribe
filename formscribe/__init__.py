@@ -92,16 +92,6 @@ class Form(object):
             # instantiate the field so its InvalidFieldError exceptions
             # are raised
             field(automatically_validate=False)
-            if field.regex_key:
-                group = field.regex_group
-                group_key = field.regex_group_key
-                try:
-                    self.regex_values[group]['matches'] = []
-                    self.regex_values[group][group_key] = []
-                except KeyError:
-                    self.regex_values[group] = {}
-                    self.regex_values[group]['matches'] = []
-                    self.regex_values[group][group_key] = []
             try:
                 self.validate_field(field)
             except ValidationError:
@@ -135,11 +125,10 @@ class Form(object):
     def build_kwargs(self):
         kwargs = {field.__name__.lower(): value
                   for field, value in self.values.items()}
-        for group, attributes in self.regex_values.items():
-            values = list(filter((lambda x: x if all(x) else None),
-                                 zip(*attributes.values())))
-            kwargs[group] = [dict(zip(attributes.keys(), value))
-                             for value in values]
+        for group, matches_values in self.regex_values.items():
+            for matches, values in matches_values.items():
+                values['matches'] = list(matches)
+            kwargs[group] = list(matches_values.values())
         return kwargs
 
     def get_fields(self):
@@ -200,7 +189,7 @@ class Form(object):
             return
 
         # validate the field itself
-        if field.key:
+        if field.key:  # normal validation
             try:
                 value = field(value=self.data.get(field.key),
                               automatically_validate=True)
@@ -209,7 +198,7 @@ class Form(object):
             except ValidationError as error:
                 self.errors.append(error)
                 self.invalidated.append(field)
-        elif field.regex_key:
+        elif field.regex_key:  # regex-based validation
             group = field.regex_group
             group_key = field.regex_group_key
             for key, value in self.data.items():
@@ -217,8 +206,14 @@ class Form(object):
                 if all_matches:
                     try:
                         value = field(value=value, automatically_validate=True)
-                        self.regex_values[group][group_key].append(value)
-                        self.regex_values[group]['matches'].append(all_matches)
+
+                        # initialise necessary structure
+                        if group not in self.regex_values:
+                            self.regex_values[group] = {}
+                        if tuple(all_matches) not in self.regex_values[group]:
+                            self.regex_values[group][tuple(all_matches)] = {}
+
+                        self.regex_values[group][tuple(all_matches)][group_key] = value
                     except ValidationError as error:
                         self.errors.append(error)
 

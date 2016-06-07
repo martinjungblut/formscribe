@@ -8,7 +8,7 @@ from tests.helpers import FormScribeTest
 
 class ProductManagementForm(Form):
     class ProductName(Field):
-        regex_key = 'product-name-\d+'
+        regex_key = 'product-name-(\d+)'
         regex_group = 'products'
         regex_group_key = 'name'
 
@@ -26,7 +26,7 @@ class ProductManagementForm(Form):
                 FormScribeTest.world['product_names'].append(value)
 
     class ProductDescription(Field):
-        regex_key = 'product-description-\d+'
+        regex_key = 'product-description-(\d+)'
         regex_group = 'products'
         regex_group_key = 'description'
 
@@ -75,7 +75,12 @@ class TestProductManagementForm(FormScribeTest):
 
         form = ProductManagementForm(data)
         self.assertEqual(len(form.errors), 0)
-        self.assertEqual(FormScribeTest.world['products'], expected)
+
+        for product in FormScribeTest.world['products']:
+            self.assertTrue(product in expected)
+
+        for entry in expected:
+            self.assertTrue(entry in FormScribeTest.world['products'])
 
     def test_invalid(self):
         data = {
@@ -116,13 +121,21 @@ class TestMatchRegex(FormScribeTest):
         data = {
             'item-bar-amount': 5,
             'item-bar-enabled': 1,
+            'item-baz-enabled': 1,
             'item-foo-amount': 10,
             'item-foo-enabled': 1,
         }
         expected = [
-            {'enabled': True, 'amount': 5, 'matches': ['bar']},
-            {'enabled': True, 'amount': 10, 'matches': ['foo']},
+            {'amount': 10, 'matches': ['foo'], 'enabled': True},
+            {'amount': 5, 'matches': ['bar'], 'enabled': True},
+            {'matches': ['baz'], 'enabled': True},
         ]
+
         form = ItemRegexForm(data)
         self.assertEqual(len(form.errors), 0)
-        self.assertEqual(FormScribeTest.world['items'], expected)
+
+        for item in FormScribeTest.world['items']:
+            self.assertTrue(item in expected)
+
+        for entry in expected:
+            self.assertTrue(entry in FormScribeTest.world['items'])
