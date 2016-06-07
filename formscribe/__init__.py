@@ -201,18 +201,15 @@ class Form(object):
         elif field.regex_key:  # regex-based validation
             group = field.regex_group
             group_key = field.regex_group_key
+            if group not in self.regex_values:
+                self.regex_values[group] = {}
             for key, value in self.data.items():
                 all_matches = re.findall(field.regex_key, key)
                 if all_matches:
                     try:
                         value = field(value=value, automatically_validate=True)
-
-                        # initialise necessary structure
-                        if group not in self.regex_values:
-                            self.regex_values[group] = {}
                         if tuple(all_matches) not in self.regex_values[group]:
                             self.regex_values[group][tuple(all_matches)] = {}
-
                         self.regex_values[group][tuple(all_matches)][group_key] = value
                     except ValidationError as error:
                         self.errors.append(error)

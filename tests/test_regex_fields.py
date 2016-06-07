@@ -139,3 +139,6 @@ class TestMatchRegex(FormScribeTest):
 
         for entry in expected:
             self.assertTrue(entry in FormScribeTest.world['items'])
+
+    def test_no_match(self):
+        form = ItemRegexForm({})
