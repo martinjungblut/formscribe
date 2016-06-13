@@ -141,4 +141,4 @@ class TestMatchRegex(FormScribeTest):
             self.assertTrue(entry in FormScribeTest.world['items'])
 
     def test_no_match(self):
-        form = ItemRegexForm({})
+        ItemRegexForm({})
