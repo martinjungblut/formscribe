@@ -78,13 +78,17 @@ class Field(object, metaclass=FieldMeta):
 
 
 class Form(object):
-    def __init__(self, data):
+    def __init__(self, data, **kwargs):
         self.data = OrderedDict(sorted(data.items(), key=itemgetter(0)))
         self.errors = []
         self.invalidated = []
         self.regex_values = {}
         self.validated = []
         self.values = {}
+
+        # set kwargs-based attributes
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
         # validate all fields and their dependencies
         fields = self.get_fields()

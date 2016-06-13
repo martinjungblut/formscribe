@@ -7,10 +7,23 @@ from formscribe import Form
 from formscribe.error import InvalidFieldError
 
 
+class KwargsSettersForm(Form):
+    def submit(self):
+        self.session['value'] = 3
+
+
 class TestForm(unittest.TestCase):
-    def test(self):
+    def test_no_errors(self):
         form = Form({})
         self.assertEqual(len(form.errors), 0)
+
+    def test_kwargs_setters(self):
+        session = {}
+        form = KwargsSettersForm({}, session=session)
+
+        self.assertEqual(len(form.errors), 0)
+        self.assertEqual(form.session, session)
+        self.assertEqual(session['value'], 3)
 
 
 class TestField(unittest.TestCase):
