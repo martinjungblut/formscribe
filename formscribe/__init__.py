@@ -96,6 +96,8 @@ class Form(object):
             # instantiate the field so its InvalidFieldError exceptions
             # are raised
             field(automatically_validate=False)
+            if field.regex_key and (field.regex_group not in self.regex_values):
+                self.regex_values[field.regex_group] = {}
             try:
                 self.validate_field(field)
             except ValidationError:
@@ -204,9 +206,6 @@ class Form(object):
                 self.invalidated.append(field)
         elif field.regex_key:  # regex-based validation
             group = field.regex_group
-            group_key = field.regex_group_key
-            if group not in self.regex_values:
-                self.regex_values[group] = {}
             for key, value in self.data.items():
                 all_matches = re.findall(field.regex_key, key)
                 if all_matches:
@@ -214,7 +213,7 @@ class Form(object):
                         value = field(value=value, automatically_validate=True)
                         if tuple(all_matches) not in self.regex_values[group]:
                             self.regex_values[group][tuple(all_matches)] = {}
-                        self.regex_values[group][tuple(all_matches)][group_key] = value
+                        self.regex_values[group][tuple(all_matches)][field.regex_group_key] = value
                     except ValidationError as error:
                         self.errors.append(error)
 
