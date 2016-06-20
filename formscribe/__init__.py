@@ -6,16 +6,21 @@ and is easily extensible.
 """
 
 import re
-from collections import OrderedDict
 from operator import itemgetter
 
+import six
 from formscribe.error import SubmitError
 from formscribe.error import ValidationError
 from formscribe.meta import FieldMeta
 from formscribe.util import get_attributes
 
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
 
-class Field(object, metaclass=FieldMeta):
+
+class Field(six.with_metaclass(FieldMeta, object)):
     """
     Represents an HTML field.
 
@@ -129,8 +134,8 @@ class Form(object):
                 pass
 
     def build_kwargs(self):
-        kwargs = {field.__name__.lower(): value
-                  for field, value in self.values.items()}
+        kwargs = dict((field.__name__.lower(), value)
+                      for field, value in self.values.items())
         for group, matches_values in self.regex_values.items():
             for matches, values in matches_values.items():
                 values['matches'] = list(matches)

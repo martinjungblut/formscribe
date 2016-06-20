@@ -7,7 +7,7 @@ class InvalidFieldError(Exception):
     """
 
     def __init__(self, message):
-        super().__init__()
+        super(InvalidFieldError, self).__init__()
         self.message = message
 
 
@@ -21,7 +21,7 @@ class ValidationError(Exception):
     """
 
     def __init__(self, message):
-        super().__init__()
+        super(ValidationError, self).__init__()
         self.message = message
 
 
@@ -35,5 +35,5 @@ class SubmitError(Exception):
     """
 
     def __init__(self, message):
-        super().__init__()
+        super(SubmitError, self).__init__()
         self.message = message

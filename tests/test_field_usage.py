@@ -24,20 +24,18 @@ class TestFieldUsage(unittest.TestCase):
 
     def test_validation_error(self):
         # kwargs only
-        with self.assertRaises(ValidationError):
-            Password(value=3, automatically_validate=True)
+        self.assertRaises(ValidationError, Password, value=3,
+                          automatically_validate=True)
 
         # mix kwargs with args
-        with self.assertRaises(ValidationError):
-            Password(3, automatically_validate=True)
+        self.assertRaises(ValidationError, Password, 3,
+                          automatically_validate=True)
 
         # no kwargs
-        with self.assertRaises(ValidationError):
-            Password(3, True)
+        self.assertRaises(ValidationError, Password, 3, True)
 
         # default args
-        with self.assertRaises(ValidationError):
-            Password(3)
+        self.assertRaises(ValidationError, Password, 3)
 
         instance = Password()
         self.assertTrue(isinstance(instance, Password))

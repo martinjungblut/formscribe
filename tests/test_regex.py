@@ -150,7 +150,7 @@ class TestKeywordArgs(FormScribeTest):
         form = KeywordArgsTestForm({})
         self.assertEqual(len(form.errors), 0)
 
-        self.assertIsNone(FormScribeTest.world['keyword_args']['enabled'])
+        self.assertEqual(FormScribeTest.world['keyword_args']['enabled'], None)
         self.assertEqual(FormScribeTest.world['keyword_args']['players'], [])
 
     def test_with_name_but_not_enabled(self):

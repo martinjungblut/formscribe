@@ -12,6 +12,7 @@ setup(
     keywords=['form', 'validation', 'web'],
     install_requires=[
         'ordereddict',
+        'six',
     ],
     license='MIT',
 )

@@ -28,12 +28,12 @@ class TestForm(unittest.TestCase):
 
 class TestField(unittest.TestCase):
     def test_validate(self):
-        with self.assertRaises(NotImplementedError):
-            Field().validate(None)
+        field = Field()
+        self.assertRaises(NotImplementedError, field.validate, None)
 
     def test_submit(self):
-        with self.assertRaises(NotImplementedError):
-            Field().submit(None)
+        field = Field()
+        self.assertRaises(NotImplementedError, field.submit, None)
 
 
 class NoRegexGroupForm(Form):
@@ -56,9 +56,7 @@ class NoRegexGroupKeyForm(Form):
 
 class TestRegexFields(unittest.TestCase):
     def test_no_regex_group(self):
-        with self.assertRaises(InvalidFieldError):
-            NoRegexGroupForm({})
+        self.assertRaises(InvalidFieldError, NoRegexGroupForm, {})
 
     def test_no_regex_group_key(self):
-        with self.assertRaises(InvalidFieldError):
-            NoRegexGroupKeyForm({})
+        self.assertRaises(InvalidFieldError, NoRegexGroupKeyForm, {})
