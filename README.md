@@ -88,13 +88,7 @@ class CharacterManagement(Form):
             return value
 ```
 
-### Changelog
-#### 0.3.0
- 1. Added the ```enabled``` Field property, which defines whether a given Field object is enabled or not. Disabled fields aren't taken into account during validation. This property may be a static attribute, a callable, or an actual Python property.
- 2. A Field's ```__init__``` method may now be used to set attributes, just as you would do with any other Python object. You may then use those attributes normally in the ```validate()``` method, since they now belong to the field's instance.
-
 ### To do
- 1. Add Python 2.6 and 2.7 support.
- 2. Add a neat type system, so that code is more reusable and modular.
- 3. Provide a good way for developers to test their forms without having to emulate global state.
- 4. Write good documentation using Sphinx.
+ 1. Add a neat type system, so that code is more reusable and modular.
+ 2. Provide a good way for developers to test their forms without having to emulate global state.
+ 3. Write good documentation using Sphinx.
