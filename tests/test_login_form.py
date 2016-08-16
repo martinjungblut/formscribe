@@ -4,7 +4,7 @@ from formscribe import Field
 from formscribe import Form
 from formscribe import SubmitError
 from formscribe import ValidationError
-from tests.helpers import FormScribeTest
+from tests.helpers import StatefulTest
 
 
 class LoginForm(Form):
@@ -22,14 +22,14 @@ class LoginForm(Form):
             except (TypeError, ValueError):
                 raise ValidationError('1')
 
-            FormScribeTest.world['confirmation_code'] = True
+            StatefulTest.world['confirmation_code'] = True
             return value
 
         def submit(self, value):
             if not value:
                 raise SubmitError('2')
             else:
-                FormScribeTest.world['confirmation_code'] = value
+                StatefulTest.world['confirmation_code'] = value
 
     class Username(Field):
         key = 'username'
@@ -44,11 +44,11 @@ class LoginForm(Form):
             except AttributeError:
                 raise ValidationError('4')
 
-            FormScribeTest.world['username'] = True
+            StatefulTest.world['username'] = True
             return value
 
         def submit(self, value):
-            FormScribeTest.world['username'] = value
+            StatefulTest.world['username'] = value
 
     class Password(Field):
         key = 'password'
@@ -63,11 +63,11 @@ class LoginForm(Form):
             except (TypeError, ValueError):
                 raise ValidationError('6')
 
-            FormScribeTest.world['password'] = True
+            StatefulTest.world['password'] = True
             return str(value).strip()
 
         def submit(self, value):
-            FormScribeTest.world['password'] = value
+            StatefulTest.world['password'] = value
 
     # this field does not implement the submit() method,
     # therefore always raising a NotImplementedError
@@ -96,7 +96,7 @@ class LoginForm(Form):
             raise SubmitError('12')
 
 
-class TestLoginForm(FormScribeTest):
+class TestLoginForm(StatefulTest):
     def test_definition(self):
         form = LoginForm({})
         self.assertEqual(form.get_fields(), [
@@ -121,10 +121,10 @@ class TestLoginForm(FormScribeTest):
         }
         form = LoginForm(data)
         self.assertEqual(len(form.errors), 0)
-        self.assertEqual(FormScribeTest.world.get('confirmation_code'),
+        self.assertEqual(StatefulTest.world.get('confirmation_code'),
                          33)
-        self.assertEqual(FormScribeTest.world.get('password'), '12345')
-        self.assertEqual(FormScribeTest.world.get('username'),
+        self.assertEqual(StatefulTest.world.get('password'), '12345')
+        self.assertEqual(StatefulTest.world.get('username'),
                          'test_username')
 
     def test_invalid_confirmation_code(self):
@@ -179,8 +179,8 @@ class TestLoginForm(FormScribeTest):
         form = LoginForm(data)
         self.assertEqual(len(form.errors), 1)
         self.assertEqual(form.errors[0].message, '5')
-        self.assertNotEqual(FormScribeTest.world.get('confirmation_code'), 22)
-        self.assertNotEqual(FormScribeTest.world.get('username'),
+        self.assertNotEqual(StatefulTest.world.get('confirmation_code'), 22)
+        self.assertNotEqual(StatefulTest.world.get('username'),
                             'test_username')
 
         data = {
@@ -192,8 +192,8 @@ class TestLoginForm(FormScribeTest):
         form = LoginForm(data)
         self.assertEqual(len(form.errors), 1)
         self.assertEqual(form.errors[0].message, '6')
-        self.assertNotEqual(FormScribeTest.world.get('confirmation_code'), 22)
-        self.assertNotEqual(FormScribeTest.world.get('username'),
+        self.assertNotEqual(StatefulTest.world.get('confirmation_code'), 22)
+        self.assertNotEqual(StatefulTest.world.get('username'),
                             'test_username')
 
     def test_when_value(self):
@@ -205,10 +205,10 @@ class TestLoginForm(FormScribeTest):
         }
         form = LoginForm(data)
         self.assertEqual(len(form.errors), 0)
-        self.assertEqual(FormScribeTest.world.get('confirmation_code'), 22)
-        self.assertEqual(FormScribeTest.world.get('username'),
+        self.assertEqual(StatefulTest.world.get('confirmation_code'), 22)
+        self.assertEqual(StatefulTest.world.get('username'),
                          'another_username')
-        self.assertFalse('password' in FormScribeTest.world)
+        self.assertFalse('password' in StatefulTest.world)
 
     def test_when_validated(self):
         data = {
@@ -220,7 +220,7 @@ class TestLoginForm(FormScribeTest):
         self.assertEqual(len(form.errors), 2)
         self.assertEqual(form.errors[0].message, '13')
         self.assertEqual(form.errors[1].message, '1')
-        self.assertTrue('username' not in FormScribeTest.world)
+        self.assertTrue('username' not in StatefulTest.world)
 
         data = {
             'csfr-code': 'cfsr-invalid',
@@ -230,8 +230,8 @@ class TestLoginForm(FormScribeTest):
         form = LoginForm(data)
         self.assertEqual(len(form.errors), 1)
         self.assertEqual(form.errors[0].message, '13')
-        self.assertEqual(FormScribeTest.world.get('confirmation_code'), True)
-        self.assertEqual(FormScribeTest.world.get('username'), True)
+        self.assertEqual(StatefulTest.world.get('confirmation_code'), True)
+        self.assertEqual(StatefulTest.world.get('username'), True)
 
     def test_form_validation(self):
         data = {
