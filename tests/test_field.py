@@ -85,7 +85,7 @@ class WhenValidatedWhenValueForm(Form):
             return value
 
         def submit(self, value):
-            if not value:
+            if value == 2:
                 raise SubmitError('2')
             else:
                 StatefulTest.world['confirmation-code'] = value
@@ -123,11 +123,11 @@ class WhenValidatedWhenValueForm(Form):
             return 'csfr-valid'
 
     def validate(self, confirmationcode, username, password, csfrcode):
-        if confirmationcode == 0:
+        if confirmationcode == 4:
             raise ValidationError('4')
 
     def submit(self, confirmationcode, username, password, csfrcode):
-        if confirmationcode == 1:
+        if confirmationcode == 5:
             raise SubmitError('5')
 
 
@@ -160,18 +160,20 @@ class TestWhenValidatedWhenValueForm(StatefulTest):
         self.assertEqual(len(form.errors), 0)
 
     def test_invalid_confirmation_code(self):
-        # not an integer
+        # field ValidationError
         data = {'confirmation-code': ' code ', 'csfr-code': 'csfr-valid',
                 'password': '12345', 'username': 'username'}
         form = WhenValidatedWhenValueForm(data)
         self.assertEqual(len(form.errors), 1)
+        self.assertTrue(isinstance(form.errors[0], ValidationError))
         self.assertEqual(form.errors[0].message, '1')
 
-        # int(' 0 ') evaluates to false
-        data = {'confirmation-code': ' 0 ', 'csfr-code': 'csfr-valid',
-                'password': '12345', 'username': 'test_username'}
+        # field SubmitError
+        data = {'confirmation-code': ' 2 ', 'csfr-code': 'csfr-valid',
+                'password': '12345', 'username': 'username'}
         form = WhenValidatedWhenValueForm(data)
         self.assertEqual(len(form.errors), 1)
+        self.assertTrue(isinstance(form.errors[0], SubmitError))
         self.assertEqual(form.errors[0].message, '2')
 
     def test_when_value_correct(self):
@@ -193,15 +195,16 @@ class TestWhenValidatedWhenValueForm(StatefulTest):
         self.assertFalse('password' in StatefulTest.world)
 
     def test_when_validated_correct(self):
-        data = {'confirmation-code': '22', 'csfr-code': 'cfsr-valid',
+        data = {'confirmation-code': '22', 'csfr-code': 'csfr-valid',
                 'username': 'another_username'}
         form = WhenValidatedWhenValueForm(data)
         self.assertEqual(len(form.errors), 0)
-        self.assertEqual(StatefulTest.world.get('confirmation-code'), True)
-        self.assertEqual(StatefulTest.world.get('username'), True)
+
+        self.assertEqual(StatefulTest.world.get('confirmation-code'), 22)
+        self.assertEqual(StatefulTest.world.get('username'), 'another_username')
 
     def test_when_validated_incorrect(self):
-        data = {'confirmation-code': 'invalid', 'csfr-code': 'cfsr-valid',
+        data = {'confirmation-code': 'invalid', 'csfr-code': 'csfr-valid',
                 'username': 'another_username'}
         form = WhenValidatedWhenValueForm(data)
         self.assertEqual(len(form.errors), 1)
@@ -209,14 +212,14 @@ class TestWhenValidatedWhenValueForm(StatefulTest):
         self.assertTrue('username' not in StatefulTest.world)
 
     def test_form_validate_unsuccessful(self):
-        data = {'confirmation-code': '0', 'csfr-code': 'csfr-valid',
+        data = {'confirmation-code': '4', 'csfr-code': 'csfr-valid',
                 'password': '12345', 'username': 'test_username'}
         form = WhenValidatedWhenValueForm(data)
         self.assertEqual(len(form.errors), 1)
         self.assertEqual(form.errors[0].message, '4')
 
     def test_form_submit_unsuccessful(self):
-        data = {'confirmation-code': '1', 'csfr-code': 'csfr-valid',
+        data = {'confirmation-code': '5', 'csfr-code': 'csfr-valid',
                 'password': '12345', 'username': 'test_username'}
         form = WhenValidatedWhenValueForm(data)
         self.assertEqual(len(form.errors), 1)
