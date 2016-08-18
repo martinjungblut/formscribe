@@ -1,8 +1,10 @@
 *.pyc
 .cache
 .coverage
+.vscode
 MANIFEST
 __pycache__
 cover
 dist
+htmlcov
 virtenv
