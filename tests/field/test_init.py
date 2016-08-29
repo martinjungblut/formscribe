@@ -28,6 +28,11 @@ class TestFieldInitForm(Form):
 
 
 class TestFieldInit(StatefulTest):
+    """
+    Make sure the Field's __init__ method is called and the attributes
+    it sets are correctly defined.
+    """
+
     def setUp(self):
         self.world['submitted_value'] = None
 

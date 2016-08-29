@@ -1,36 +1,7 @@
-import unittest
-
 from formscribe import Field
 from formscribe import Form
-from formscribe.error import InvalidFieldError
 from formscribe.error import ValidationError
 from tests.helpers import StatefulTest
-
-
-class NoRegexGroup(Field):
-    """
-    Missing the 'regex_group' attribute, InvalidFieldError
-    should be raised.
-    """
-
-    regex_key = 'some-key'
-    regex_group_key = 'some-group-key'
-
-    def validate(self, value):
-        return value
-
-
-class NoRegexGroupKey(Field):
-    """
-    Missing the 'regex_group_key' attribute, InvalidFieldError
-    should be raised.
-    """
-
-    regex_key = 'some-key'
-    regex_group = 'some-group'
-
-    def validate(self, value):
-        return value
 
 
 class KeywordArgumentsTestForm(Form):
@@ -111,14 +82,6 @@ class MatchingAndGroupingTestForm(Form):
     def submit(self, products):
         for product in products:
             StatefulTest.world['products'].append(product)
-
-
-class TestRegexFields(unittest.TestCase):
-    def test_no_regex_group_invalid_field_error(self):
-        self.assertRaises(InvalidFieldError, NoRegexGroup, {})
-
-    def test_no_regex_group_key_invalid_field_error(self):
-        self.assertRaises(InvalidFieldError, NoRegexGroupKey, {})
 
 
 class TestKeywordArguments(StatefulTest):

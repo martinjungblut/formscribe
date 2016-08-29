@@ -10,14 +10,20 @@ class FieldMeta(type):
     def __call__(cls, *args, **kwargs):
         instance = object.__new__(cls, *args, **kwargs)
 
-        if instance.regex_key and not instance.regex_group:
-            raise InvalidFieldError('Regex group is required.')
-
-        if instance.regex_key and not instance.regex_group_key:
-            raise InvalidFieldError('Regex group key is required.')
+        regex_attributes = [getattr(instance, attribute) for attribute in
+                            ('regex_group', 'regex_group_key', 'regex_key')]
+        if any(regex_attributes) and not all(regex_attributes):
+            raise InvalidFieldError('The following attributes are required:'
+                                    ' regex_group, regex_group_key,'
+                                    ' regex_key.')
 
         if instance.regex_key and instance.key:
-            raise InvalidFieldError('Regex key and key are incompatible.')
+            raise InvalidFieldError('The following attributes are incompatible:'
+                                    ' regex_key, key.')
+
+        if not instance.key and not all(regex_attributes):
+            raise InvalidFieldError('Field must be either key-based or'
+                                    ' regex-based.')
 
         instance.__init__()
 
