@@ -9,9 +9,10 @@ import re
 from operator import itemgetter
 
 import six
+
 from formscribe.error import SubmitError
 from formscribe.error import ValidationError
-from formscribe.meta import FieldMeta
+from formscribe.meta import MetaField
 from formscribe.util import get_attributes
 
 try:
@@ -20,7 +21,7 @@ except ImportError:
     from ordereddict import OrderedDict
 
 
-class Field(six.with_metaclass(FieldMeta, object)):
+class Field(six.with_metaclass(MetaField, object)):
     """
     Represents an HTML field.
 

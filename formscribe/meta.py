@@ -4,7 +4,7 @@
 from formscribe.error import InvalidFieldError
 
 
-class FieldMeta(type):
+class MetaField(type):
     """Field metaclass."""
 
     def __call__(cls, *args, **kwargs):
@@ -35,18 +35,13 @@ class FieldMeta(type):
             except IndexError:
                 automatically_validate = True
 
-        try:
-            value = kwargs['value']
-        except KeyError:
-            try:
-                value = args[0]
-            except IndexError:
-                pass
-
         if automatically_validate:
             try:
-                return instance.validate(value)
-            except NameError:
-                pass
+                return instance.validate(kwargs['value'])
+            except KeyError:
+                try:
+                    return instance.validate(args[0])
+                except IndexError:
+                    pass
 
         return instance
