@@ -4,8 +4,8 @@ from formscribe.error import ValidationError
 from tests.helpers import StatefulTest
 
 
-class TestFieldInitForm(Form):
-    class TestFieldInitField(Field):
+class MockedForm(Form):
+    class MockedField(Field):
         key = 'test-key'
 
         def __init__(self):
@@ -13,15 +13,9 @@ class TestFieldInitForm(Form):
 
         def validate(self, value):
             if self.validate_as_int:
-                try:
-                    return int(value)
-                except Exception:
-                    raise ValidationError(0)
+                return int(value)
             else:
-                try:
-                    return value.strip()
-                except Exception:
-                    raise ValidationError(1)
+                return value.strip()
 
         def submit(self, value):
             StatefulTest.world['submitted_value'] = value
@@ -33,14 +27,12 @@ class TestFieldInit(StatefulTest):
     it sets are correctly defined.
     """
 
-    def setUp(self):
-        self.world['submitted_value'] = None
-
-    def test_init(self):
+    def test_init_validate_as_int(self):
         self.world['validate_as_int'] = True
-        TestFieldInitForm({'test-key': 3})
+        MockedForm({'test-key': 3})
         self.assertEqual(self.world['submitted_value'], 3)
 
+    def test_init_dont_validate_as_int(self):
         self.world['validate_as_int'] = False
-        TestFieldInitForm({'test-key': ' 3 '})
+        MockedForm({'test-key': ' 3 '})
         self.assertEqual(self.world['submitted_value'], '3')
